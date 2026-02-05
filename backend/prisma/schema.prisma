@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+enum Role {
+  ADMIN
+  MAESTRO
+  ALUMNO
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  nombre    String
+  password  String
+  role      Role     @default(ALUMNO)
+
+  clasesImpartidas Class[]      @relation("MaestroClases")
+  inscripciones    Enrollment[]
+  entregas         Submission[]
+}
+
+model Class {
+  id        String @id @default(uuid())
+  nombre    String
+  codigo    String @unique
+
+  maestroId String
+  maestro   User   @relation("MaestroClases", fields: [maestroId], references: [id])
+
+  alumnos Enrollment[]
+  tareas  Assignment[]
+}
+
+model Enrollment {
+  id        String @id @default(uuid())
+  studentId String
+  classId   String
+
+  student User  @relation(fields: [studentId], references: [id])
+  class   Class @relation(fields: [classId], references: [id])
+
+  @@unique([studentId, classId])
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  titulo      String
+  descripcion String
+  fechaLimite DateTime
+
+  classId String
+  class   Class @relation(fields: [classId], references: [id])
+
+  entregas Submission[]
+}
+
+model Submission {
+  id           String   @id @default(uuid())
+  archivoUrl   String
+  calificacion Float?
+  comentario   String?
+  fechaEntrega DateTime @default(now())
+
+  studentId    String
+  assignmentId String
+
+  student    User       @relation(fields: [studentId], references: [id])
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+}
+
